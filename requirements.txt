@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-kobert_tokenizer @ git+https://github.com/SKTBrain/KoBERT.git@master#egg=kobert_tokenizer&subdirectory=kobert_hf
 torch
 transformers
 sentencepiece
