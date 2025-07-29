@@ -6,4 +6,4 @@ sentencepiece  # KoBERT tokenizer requires sentencepiece
 tokenizers 
 gluonnlp==0.10.0
 mxnet
-numpy
+numpy==1.23.5
