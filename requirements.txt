@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 torch
-transformers
+transformers==3.0.2
 sentencepiece
 tokenizers
 gluonnlp==0.10.0
