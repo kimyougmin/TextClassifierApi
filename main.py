@@ -7,7 +7,7 @@ import uvicorn
 app = FastAPI()
 
 # Load model
-model = torch.load("model.pt", map_location=torch.device('cpu'))
+model = torch.load("textClassifierModel.pt", map_location=torch.device('cpu'))
 model.eval()
 
 # Load tokenizer (KoBERT의 경우)
