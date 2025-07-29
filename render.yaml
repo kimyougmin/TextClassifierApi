@@ -3,8 +3,7 @@ services:
     name: teatClassifier
     runtime: python
     buildCommand: "pip install -r requirements.txt"
-    # 이 부분을 정확하게 확인하고 수정하세요.
-    startCommand: "uvicorn main:app --host 0.0.0.0 --port 10000"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.13
