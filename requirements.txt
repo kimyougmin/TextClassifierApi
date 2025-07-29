@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+light-the-torch
+nest_asyncio
+pyngrok
+mxnet-mkl==1.6.0
+numpy==1.23.1
+gluonnlp==0.10.0
+pandas
+tqdm
+sentencepiece
+transformers==3.0.2
+torch==1.0.0
+torchvision==0.4.0
+git+https://github.com/SKTBrain/KoBERT.git#egg=kobert_tokenizer&subdirectory=kobert_hf
