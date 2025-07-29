@@ -4,3 +4,4 @@ torch
 transformers
 sentencepiece  # KoBERT tokenizer requires sentencepiece
 tokenizers 
+gluonnlp==0.10.0
