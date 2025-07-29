@@ -5,3 +5,5 @@ transformers
 sentencepiece  # KoBERT tokenizer requires sentencepiece
 tokenizers 
 gluonnlp==0.10.0
+mxnet-mkl==1.6.0
+numpy==1.23.1
