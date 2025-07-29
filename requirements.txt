@@ -1,16 +1,6 @@
-setuptools>=42
-wheel
 fastapi
 uvicorn
-nest_asyncio
-pyngrok
-mxnet-mkl==1.6.0
-numpy==1.23.1
-pandas
-tqdm
-sentencepiece==0.1.96
-transformers==3.0.2
-tokenizers==0.8.1rc1
-torch==1.0.0
-torchvision==0.4.0
-
+torch
+transformers
+sentencepiece  # KoBERT tokenizer requires sentencepiece
+tokenizers 
