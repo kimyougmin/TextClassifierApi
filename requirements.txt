@@ -7,3 +7,4 @@ tokenizers
 gluonnlp==0.10.0
 mxnet==1.9.1
 numpy==1.23.5
+kobert-tokenizer
