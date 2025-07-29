@@ -6,28 +6,23 @@ import gluonnlp as nlp
 from kobert_tokenizer import KoBERTTokenizer
 from torch.utils.data import Dataset, DataLoader
 import pickle
+from transformers import BertTokenizer
 
-# 기타 설정값
 max_len = 64
 batch_size = 32
 device = torch.device("cpu")
 
-# FastAPI 앱 생성
 app = FastAPI()
 
-# KoBERT 토크나이저 로드
-tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+tokenizer = BertTokenizer.from_pretrained("skt/kobert-base-v1")
 tok = tokenizer.tokenize
 
-# vocab 로드 (pickle로 저장되어 있어야 함)
 with open("vocab.pkl", "rb") as f:
     vocab = pickle.load(f)
 
-# category dict 로드
 with open("category.pkl", "rb") as f:
     category = pickle.load(f)
 
-# BERTDataset 클래스 정의
 class BERTDataset(Dataset):
     def __init__(self, dataset, sent_idx, label_idx, bert_tokenizer, vocab, max_len, pad, pair):
         transform = nlp.data.BERTSentenceTransform(
@@ -42,11 +37,9 @@ class BERTDataset(Dataset):
     def __len__(self):
         return len(self.labels)
 
-# 모델 로드
 model = torch.load("textClassifierModel.pt", map_location=device)
 model.eval()
 
-# 예측 함수
 def predict(predict_sentence):
     data = [predict_sentence, '0']
     dataset_another = [data]
@@ -68,7 +61,6 @@ def predict(predict_sentence):
             test_eval.append(list(category.keys())[np.argmax(logits)])
         return test_eval[0]
 
-# API 엔드포인트
 @app.post("/predict")
 async def predict_api(request: Request):
     data = await request.json()
