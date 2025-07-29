@@ -1,17 +1,27 @@
-# main.py
-from fastapi import FastAPI, Request
 import torch
-from transformers import BertTokenizer
-import uvicorn
+import torch.nn as nn
+from fastapi import FastAPI, Request
+from transformers import BertModel, BertTokenizer
 
 app = FastAPI()
 
-# Load model
-model = torch.load("textClassifierModel.pt", map_location=torch.device('cpu'))
+class TextClassifier(nn.Module):
+    def __init__(self, num_classes=2):
+        super(TextClassifier, self).__init__()
+        self.bert = BertModel.from_pretrained("skt/kobert-base-v1")
+        self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
+
+    def forward(self, input_ids, attention_mask):
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        pooled_output = outputs.pooler_output
+        return self.classifier(pooled_output)
+
+model = TextClassifier()
+state_dict = torch.load("textClassifierModel.pt", map_location=torch.device('cpu'))
+model.load_state_dict(state_dict)
 model.eval()
 
-# Load tokenizer (KoBERT의 경우)
-tokenizer = BertTokenizer.from_pretrained('skt/kobert-base-v1')  # 또는 custom tokenizer 경로
+tokenizer = BertTokenizer.from_pretrained('skt/kobert-base-v1')
 
 @app.post("/predict")
 async def predict(request: Request):
@@ -21,13 +31,12 @@ async def predict(request: Request):
     if not text:
         return {"error": "No text provided"}
 
-    # Tokenize input
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
 
-    # Run model inference
     with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits if hasattr(outputs, 'logits') else outputs[0]
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs["attention_mask"]
+        logits = model(input_ids=input_ids, attention_mask=attention_mask)
         predicted_class = torch.argmax(logits, dim=1).item()
 
     return {"prediction": predicted_class}
