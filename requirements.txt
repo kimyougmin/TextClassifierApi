@@ -3,7 +3,6 @@ uvicorn
 torch
 transformers==3.0.2
 sentencepiece
-tokenizers==0.10.3
 gluonnlp==0.10.0
 mxnet==1.9.1
 numpy==1.23.5
