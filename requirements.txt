@@ -1,12 +1,10 @@
---only-binary=:all:
-
 fastapi
 uvicorn
 torch
 transformers==3.0.2
 sentencepiece
 tokenizers==0.10.3
-gluonnlp==0.10.0
+git+https://github.com/SKTBrain/KoBERT.git#egg=kobert_tokenizer&subdirectory=kobert_tokenizer
 mxnet==1.9.1
 numpy==1.23.5
 protobuf
