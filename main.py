@@ -17,15 +17,6 @@ device = torch.device("cpu") # Render의 무료 티어는 주로 CPU를 사용�
 
 app = FastAPI()
 
-
-model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
-state_dict = torch.load(model_local_path, map_location=device)
-model.load_state_dict(state_dict)
-model.to(device)
-model.eval()
-
-tok = tokenizer.tokenize # AutoTokenizer의 tokenize 메서드를 사용합니다.
-
 # Hugging Face Hub 모델 ID 설정
 # !!! 중요: 이곳을 사용자님의 실제 Hugging Face 저장소 ID로 변경하세요.
 # 이전 업로드 로그에 따르면 "hiddenFront/TextClassifier" 입니다.
@@ -69,23 +60,14 @@ def encode_input(text, tokenizer, max_len=64):
 
 # 배포 시 Hugging Face Hub에서 모델 파일을 다운로드합니다.
 # hf_hub_download는 파일을 캐싱하므로, 같은 파일에 대한 반복적인 다운로드를 방지합니다.
-try:
-    model_local_path = hf_hub_download(repo_id=HF_MODEL_REPO_ID, filename=HF_MODEL_FILENAME)
-    print(f"모델 파일이 '{model_local_path}'에 성공적으로 다운로드되었습니다.")
-    model = torch.load(model_local_path, map_location=device)
-    model.eval() # 추론 모드로 설정
-    print("모델 로드 성공.")
-except Exception as e:
-    print(f"Error: 모델 다운로드 또는 로드 중 오류 발생: {e}")
-    # 모델 로드 실패 시 애플리케이션 시작을 방해하지 않기 위한 임시 처리입니다.
-    # 실제 배포에서는 이 오류가 발생하면 서비스가 시작되지 않도록 해야 합니다.
-    # (예: sys.exit(1) 호출)
-    # 여기서는 최소한의 기능 유지를 위해 더미 모델을 생성합니다.
-    # (주의: 이 더미 모델은 실제 추론을 수행하지 않습니다.)
-    from transformers import BertForSequenceClassification
-    model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
-    model.eval()
 
+model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+state_dict = torch.load(model_local_path, map_location=device)
+model.load_state_dict(state_dict)
+model.to(device)
+model.eval()
+
+tok = tokenizer.tokenize # AutoTokenizer의 tokenize 메서드를 사용합니다.
 
 # --- 4. 예측 함수 정의 ---
 
