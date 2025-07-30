@@ -1,60 +1,75 @@
 from fastapi import FastAPI, Request
-from transformers import AutoTokenizer, BertForSequenceClassification, BertConfig # BertForSequenceClassification, BertConfig 임포트 추가
+from transformers import AutoTokenizer, BertForSequenceClassification, BertConfig
 from huggingface_hub import hf_hub_download
 import torch
 import numpy as np
 import pickle
-import sys # 오류 시 서비스 종료를 위해 sys 모듈 임포트
-import collections # collections 모듈 임포트 추가 (OrderedDict 체크용)
+import sys
+import collections
+import os # os 모듈 임포트
+import psutil # 메모리 사용량 확인을 위해 psutil 임포트 (requirements.txt에 추가 필요)
 
 app = FastAPI()
-device = torch.device("cpu") # Render의 무료 티어는 주로 CPU를 사용합니다.
+device = torch.device("cpu")
 
-# category.pkl 로드 (이 파일은 GitHub 저장소의 루트 디렉토리에 있어야 합니다)
+# category.pkl 로드
 try:
     with open("category.pkl", "rb") as f:
         category = pickle.load(f)
     print("category.pkl 로드 성공.")
 except FileNotFoundError:
     print("Error: category.pkl 파일을 찾을 수 없습니다. 프로젝트 루트에 있는지 확인하세요.")
-    sys.exit(1) # 파일 없으면 서비스 시작하지 않음
+    sys.exit(1)
 
 # 토크나이저 로드
 tokenizer = AutoTokenizer.from_pretrained("skt/kobert-base-v1")
 print("토크나이저 로드 성공.")
 
-# Hugging Face Hub 모델 ID 설정
-# 사용자님의 실제 저장소 ID인 "hiddenFront/TextClassifier"로 변경되어 있어야 합니다.
 HF_MODEL_REPO_ID = "hiddenFront/TextClassifier"
-HF_MODEL_FILENAME = "textClassifierModel.pt" # Hugging Face Hub에 업로드한 파일 이름과 일치해야 합니다.
+HF_MODEL_FILENAME = "textClassifierModel.pt"
+
+# --- 메모리 사용량 로깅 시작 ---
+process = psutil.Process(os.getpid())
+mem_before_model_download = process.memory_info().rss / (1024 * 1024) # MB 단위
+print(f"모델 다운로드 전 메모리 사용량: {mem_before_model_download:.2f} MB")
+# --- 메모리 사용량 로깅 끝 ---
 
 try:
     model_path = hf_hub_download(repo_id=HF_MODEL_REPO_ID, filename=HF_MODEL_FILENAME)
     print(f"모델 파일이 '{model_path}'에 성공적으로 다운로드되었습니다.")
 
-    model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+    # --- 메모리 사용량 로깅 시작 ---
+    mem_after_model_download = process.memory_info().rss / (1024 * 1024) # MB 단위
+    print(f"모델 다운로드 후 메모리 사용량: {mem_after_model_download:.2f} MB")
+    # --- 메모리 사용량 로깅 끝 ---
 
-    # 2. 다운로드된 파일에서 state_dict를 로드합니다.
+    # 1. 모델 아키텍처 정의 (가중치는 로드하지 않고 구조만 초기화)
+    config = BertConfig.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+    model = BertForSequenceClassification(config)
+
+    # 2. 다운로드된 파일에서 state_dict를 로드
     loaded_state_dict = torch.load(model_path, map_location=device)
 
-    # 3. 로드된 state_dict를 정의된 모델에 적용합니다.
-    #    만약 state_dict의 키가 모델의 키와 정확히 일치하지 않으면 오류가 발생할 수 있습니다.
-    #    (예: 'module.' 접두사가 붙어있는 경우)
+    # 3. 로드된 state_dict를 정의된 모델에 적용
     new_state_dict = collections.OrderedDict()
     for k, v in loaded_state_dict.items():
-        name = k # 기본적으로 키를 그대로 사용
-        if name.startswith('module.'): # 'module.' 접두사가 붙어있는 경우 제거
+        name = k
+        if name.startswith('module.'):
             name = name[7:]
         new_state_dict[name] = v
     
     model.load_state_dict(new_state_dict)
-    # --- 수정된 부분 끝 ---
 
-    model.eval() # 추론 모드로 설정
+    # --- 메모리 사용량 로깅 시작 ---
+    mem_after_model_load = process.memory_info().rss / (1024 * 1024) # MB 단위
+    print(f"모델 로드 및 state_dict 적용 후 메모리 사용량: {mem_after_model_load:.2f} MB")
+    # --- 메모리 사용량 로깅 끝 ---
+
+    model.eval()
     print("모델 로드 성공.")
 except Exception as e:
     print(f"Error: 모델 다운로드 또는 로드 중 오류 발생: {e}")
-    sys.exit(1) # 모델 로드 실패 시 서비스 시작하지 않음
+    sys.exit(1)
 
 @app.post("/predict")
 async def predict_api(request: Request):
@@ -74,3 +89,18 @@ async def predict_api(request: Request):
     
     label = list(category.keys())[predicted]
     return {"text": text, "classification": label}
+
+# 선택 사항: CORS 설정
+# from fastapi.middleware.cors import CORSMiddleware
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# 선택 사항: 기본 경로 엔드포인트
+# @app.get('/')
+# async def root():
+#     return {'message': 'TextClassifier API is running! Access /predict for predictions.'}
