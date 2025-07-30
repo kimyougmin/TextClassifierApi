@@ -4,7 +4,7 @@ import numpy as np
 import gluonnlp as nlp
 from torch.utils.data import Dataset, DataLoader
 import pickle
-from transformers import BertTokenizer, AutoTokenizer, AutoModel # AutoModel 임포트 (필요한 경우)
+from transformers import BertTokenizer, AutoTokenizer, AutoModel, AutoModelForSequenceClassification # AutoModel 임포트 (필요한 경우)
 from huggingface_hub import hf_hub_download # hf_hub_download 임포트
 import os # 파일 경로 조작을 위해 os 모듈 임포트
 
@@ -17,7 +17,9 @@ device = torch.device("cpu") # Render의 무료 티어는 주로 CPU를 사용�
 app = FastAPI()
 
 # KoBERTTokenizer 대신 AutoTokenizer 사용
-tokenizer = AutoTokenizer.from_pretrained("skt/kobert-base-v1")
+model_path = hf_hub_download(repo_id="hiddenFront/TextClassifier", filename="textClassifierModel.pt")
+model = torch.load(model_path, map_location=torch.device("cpu"))
+model.eval()
 tok = tokenizer.tokenize # AutoTokenizer의 tokenize 메서드를 사용합니다.
 
 # Hugging Face Hub 모델 ID 설정
@@ -49,19 +51,15 @@ except FileNotFoundError:
 
 # --- 2. BERTDataset 클래스 정의 ---
 
-class BERTDataset(Dataset):
-    def __init__(self, dataset, sent_idx, label_idx, bert_tokenizer, vocab, max_len, pad, pair):
-        transform = nlp.data.BERTSentenceTransform(
-            bert_tokenizer, max_seq_length=max_len, vocab=vocab, pad=pad, pair=pair
-        )
-        self.sentences = [transform([i[sent_idx]]) for i in dataset]
-        self.labels = [np.int32(i[label_idx]) for i in dataset]
-
-    def __getitem__(self, i):
-        return (self.sentences[i] + (self.labels[i],))
-
-    def __len__(self):
-        return len(self.labels)
+def encode_input(text, tokenizer, max_len=64):
+    encoded = tokenizer.encode_plus(
+        text,
+        max_length=max_len,
+        padding='max_length',
+        truncation=True,
+        return_tensors="pt"
+    )
+    return encoded['input_ids'], encoded['attention_mask'], encoded['token_type_ids']
 
 # --- 3. 모델 로드 (Hugging Face Hub에서 다운로드) ---
 
