@@ -7,6 +7,7 @@ import pickle
 from transformers import BertTokenizer, AutoTokenizer, AutoModel, AutoModelForSequenceClassification # AutoModel 임포트 (필요한 경우)
 from huggingface_hub import hf_hub_download # hf_hub_download 임포트
 import os # 파일 경로 조작을 위해 os 모듈 임포트
+from transformers import BertForSequenceClassification
 
 # --- 1. 전역 변수 및 모델/Vocab/Category 로딩 ---
 
@@ -16,10 +17,13 @@ device = torch.device("cpu") # Render의 무료 티어는 주로 CPU를 사용�
 
 app = FastAPI()
 
-# KoBERTTokenizer 대신 AutoTokenizer 사용
-model_path = hf_hub_download(repo_id="hiddenFront/TextClassifier", filename="textClassifierModel.pt")
-model = torch.load(model_path, map_location=torch.device("cpu"))
+
+model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+state_dict = torch.load(model_local_path, map_location=device)
+model.load_state_dict(state_dict)
+model.to(device)
 model.eval()
+
 tok = tokenizer.tokenize # AutoTokenizer의 tokenize 메서드를 사용합니다.
 
 # Hugging Face Hub 모델 ID 설정
