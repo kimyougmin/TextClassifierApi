@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from transformers import AutoTokenizer, BertForSequenceClassification # BertForSequenceClassification 임포트 추가
+from transformers import AutoTokenizer, BertForSequenceClassification, BertConfig # BertConfig 임포트 추가
 from huggingface_hub import hf_hub_download
 import torch
 import numpy as np
@@ -22,6 +22,8 @@ except FileNotFoundError:
 tokenizer = AutoTokenizer.from_pretrained("skt/kobert-base-v1")
 print("토크나이저 로드 성공.")
 
+# Hugging Face Hub 모델 ID 설정
+# 사용자님의 실제 저장소 ID인 "hiddenFront/TextClassifier"로 변경되어 있어야 합니다.
 HF_MODEL_REPO_ID = "hiddenFront/TextClassifier"
 HF_MODEL_FILENAME = "textClassifierModel.pt" # Hugging Face Hub에 업로드한 파일 이름과 일치해야 합니다.
 
@@ -29,8 +31,14 @@ try:
     model_path = hf_hub_download(repo_id=HF_MODEL_REPO_ID, filename=HF_MODEL_FILENAME)
     print(f"모델 파일이 '{model_path}'에 성공적으로 다운로드되었습니다.")
     
-    model = BertForSequenceClassification.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+    # --- 수정된 부분 시작 ---
+    # 1. 모델의 설정을 로드합니다. (가중치는 로드하지 않고 구조 정보만 가져옵니다)
+    config = BertConfig.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
+    
+    # 2. 설정에 따라 모델 아키텍처를 초기화합니다. (가중치는 랜덤 초기화된 상태)
+    model = BertForSequenceClassification(config)
 
+    # 3. 다운로드된 파일에서 state_dict를 로드합니다.
     loaded_state_dict = torch.load(model_path, map_location=device)
 
     new_state_dict = collections.OrderedDict()
