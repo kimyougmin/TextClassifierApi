@@ -30,13 +30,6 @@ HF_MODEL_FILENAME = "textClassifierModel.pt" # Hugging Face Hub에 업로드한 
 try:
     model_path = hf_hub_download(repo_id=HF_MODEL_REPO_ID, filename=HF_MODEL_FILENAME)
     print(f"모델 파일이 '{model_path}'에 성공적으로 다운로드되었습니다.")
-    
-    # --- 수정된 부분 시작 ---
-    # 1. 모델의 설정을 로드합니다. (가중치는 로드하지 않고 구조 정보만 가져옵니다)
-    config = BertConfig.from_pretrained("skt/kobert-base-v1", num_labels=len(category))
-    
-    # 2. 설정에 따라 모델 아키텍처를 초기화합니다. (가중치는 랜덤 초기화된 상태)
-    model = BertForSequenceClassification(config)
 
     # 3. 다운로드된 파일에서 state_dict를 로드합니다.
     loaded_state_dict = torch.load(model_path, map_location=device)
