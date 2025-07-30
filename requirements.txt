@@ -7,3 +7,4 @@ sentencepiece
 numpy==1.23.5
 protobuf==3.20.3
 huggingface_hub
+psutil
